@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy New Year Renata</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(45deg, #FF69B4, #FFD700);
+            background-size: 400% 400%;
+            animation: gradient 10s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        canvas {
+            display: block;
+        }
+
+        @keyframes typewriter {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        @keyframes colorChange {
+            0% { color: #FF69B4; }
+            50% { color: #FFD700; }
+            100% { color: #FF69B4; }
+        }
+
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Cursive', sans-serif;
+            font-size: 3rem;
+            color: #FF69B4;
+            text-align: center;
+            overflow: hidden;
+            white-space: nowrap;
+            width: 0;
+            opacity: 1;
+            animation: typewriter 4s steps(30, end) 1s forwards, colorChange 8s infinite;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="fireworks"></canvas>
+    <div id="message">Happy New Year Renata ❤️</div>
+    <audio autoplay loop>
+        <source src="romantic_music.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    <script>
+        const canvas = document.getElementById('fireworks');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Partikel bintang jatuh
+        class Star {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 1;
+                this.speed = Math.random() * 0.5 + 0.2;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+            }
+
+            update() {
+                this.y += this.speed;
+                if (this.y > canvas.height) {
+                    this.y = -this.size;
+                }
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.velocity = {
+                    x: (Math.random() - 0.5) * 8,
+                    y: (Math.random() - 0.5) * 8
+                };
+                this.alpha = 1;
+                this.friction = 0.99;
+            }
+
+            draw() {
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 2, 0, Math.PI * 2, false);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+
+            update() {
+                this.velocity.x *= this.friction;
+                this.velocity.y *= this.friction;
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.alpha -= 0.01;
+            }
+        }
+
+        class Firework {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.velocity = { x: 0, y: Math.random() * -2.5 - 0.5 };
+                this.particles = [];
+                this.lifespan = 180;
+                this.hasExploded = false;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 3, 0, Math.PI * 2, false);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+
+            explode() {
+                for (let i = 0; i < 50; i++) {
+                    this.particles.push(new Particle(this.x, this.y, this.color));
+                }
+            }
+
+            update() {
+                this.lifespan--;
+                if (this.lifespan <= 0 && !this.hasExploded) {
+                    this.explode();
+                    this.velocity = { x: 0, y: 0 };
+                    this.hasExploded = true;
+                } else if (this.lifespan > 0) {
+                    this.y += this.velocity.y;
+                }
+
+                this.particles.forEach((particle, index) => {
+                    particle.update();
+                    particle.draw();
+                    if (particle.alpha <= 0) {
+                        this.particles.splice(index, 1);
+                    }
+                });
+            }
+        }
+
+        let fireworks = [];
+        let stars = [];
+
+        function animateStars() {
+            stars.forEach(star => {
+                star.update();
+                star.draw();
+            });
+        }
+
+        setInterval(() => {
+            stars.push(new Star());
+        }, 100);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Setelah 4 detik, mulailah kembang api
+            if (document.getElementById("message").style.opacity == 0) {
+                fireworks.forEach((firework, index) => {
+                    firework.update();
+                    firework.draw();
+                    if (firework.lifespan <= 0 && firework.particles.every(p => p.alpha <= 0)) {
+                        fireworks.splice(index, 1);
+                    }
+                });
+
+                if (Math.random() < 0.1) {
+                    const x = Math.random() * canvas.width;
+                    const color = `hsl(${Math.random() * 360}, 50%, 50%)`;
+                    fireworks.push(new Firework(x, canvas.height, color));
+                }
+            }
+        }
+
+        setTimeout(() => {
+            // Setelah 4 detik, sembunyikan teks dan mulailah animasi kembang api
+            document.getElementById("message").style.opacity = 0;
+        }, 4000);
+
+        animate();
+    </script>
+</body>
+</html>
